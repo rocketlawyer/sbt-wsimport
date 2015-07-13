@@ -56,6 +56,7 @@ object WSImportPlugin extends AutoPlugin {
    */
   private def makeArgs(wsdlFile: String,generated:String, packageName:String): Seq[String]  =
       Seq("-Xnocompile", "-quiet") ++
+      Seq("-XadditionalHeaders") ++
       Seq("-s", generated) ++
       Seq("-p",packageName) ++
       Seq(wsdlFile)
