@@ -48,7 +48,7 @@ object WsImportPlugin extends AutoPlugin {
     files.foreach { wsdlFile =>
       val packageName = pkg(wsdlFile)
       val args = Array(
-        "-Xnocompile", "-quiet",        
+        "-XadditionalHeaders", 
         "-Xnocompile", "-quiet",
         "-s", outputDirectory.getCanonicalPath,
         "-p", pkg(wsdlFile),
