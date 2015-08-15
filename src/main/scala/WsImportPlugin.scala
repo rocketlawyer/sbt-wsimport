@@ -14,52 +14,91 @@ import Keys._
 
 object WsImportPlugin extends AutoPlugin {
 
-  object autoImport {
-    val wsdlImport = taskKey[Seq[File]]("Generate Java sources from WSDL")
-    val wsdlSource = settingKey[File]("Default WSDL source directory.")
-    val wsdlPackageName = settingKey[File => String]("Package to for Java sources generated from WSDL")
-    val wsdlOutputDirectory = settingKey[File]("Where to put Java sources generated from WSDL")
-    val wsdlFiles = taskKey[Seq[File]]("WSDL files to process")
+ object autoImport {
+    val SbtJaxWs = config("sbtjaxws")
+    val wsimport = taskKey[Seq[File]]("Generates Java code from WSDL")
+    val wsdlFile = settingKey[String]("List of wsdl files")
+    val packageName = settingKey[String]("List of wsdl files")
+    val sourceDir = settingKey[String]("List of wsdl files")
+
   }
 
-  import autoImport._
+  override def projectSettings = sbtJaxWsSettings
 
   override def requires = plugins.JvmPlugin
 
-  override def trigger = noTrigger
+  override def trigger = allRequirements
 
-  override def projectSettings = Seq(
-    wsdlSource := (sourceDirectory in Compile).value / "wsdl",
-    wsdlOutputDirectory := sourceManaged.value / "wsdlImport",
-    managedSourceDirectories in Compile += wsdlOutputDirectory.value,
-    wsdlImport := generate.value,
-    sourceGenerators in Compile += wsdlImport.taskValue,
-    wsdlPackageName := (_ => organization.value),
-    wsdlFiles := (wsdlSource.value ** "*.wsdl").get
-  )
 
-  def generate: Def.Initialize[Task[Seq[File]]] = Def.task {
-    val files = wsdlFiles.value
-    val pkg = wsdlPackageName.value
-    val log = streams.value.log
-    val outputDirectory = wsdlOutputDirectory.value
-    IO.delete(outputDirectory)
-    IO.createDirectory(outputDirectory)
-    files.foreach { wsdlFile =>
-      val packageName = pkg(wsdlFile)
-      val args = Array(
-        "-XadditionalHeaders",
-        "-Xnocompile", "-quiet",
-        "-s", outputDirectory.getCanonicalPath,
-        "-p", pkg(wsdlFile),
-        wsdlFile.getCanonicalPath
-      )
-      sys.props("javax.xml.accessExternalSchema") = "all"
-      val resultCode = WsImport.doMain(args)
-      if (resultCode == 0) log.info(s"Successfully generated Java sources from $wsdlFile")
-      else log.error(s"Failed to generate Java sources from $wsdlFile")
+  import autoImport._
+
+    val sbtJaxWsSettings: Seq[Setting[_]] =
+    Seq(
+      javaSource in SbtJaxWs <<= sourceManaged in Compile,
+      wsdlFile := "",
+      packageName := "",
+      sourceDir :="",
+      wsimport := {
+        val file = wsdlFile.value
+        val marketoPackage = packageName.value
+        //val generated = "/Users/pgupta/current/rl-email/service/src/main/java"
+        val generated = sourceDir.value
+        val s: TaskStreams = streams.value
+        val log : Logger  = s.log
+        runWsImport(file, generated, marketoPackage,log)
+      })
+
+  /**
+   * Construct arguments to run wsimport
+   * @param wsdlFile
+   * @param generated
+   * @param packageName
+   * @return
+   */
+  private def makeArgs(wsdlFile: String,generated:String, packageName:String): Seq[String]  =
+      Seq("-Xnocompile", "-quiet") ++
+      Seq("-XadditionalHeaders") ++
+      Seq("-s", generated) ++
+      Seq("-p",packageName) ++
+      Seq(wsdlFile)
+
+  /**
+   * Run the java implementation of WSIMPORT utility
+   * @param wsdlFile
+   * @param generated
+   * @param packageName
+   * @param log
+   * @return
+   */
+  private def runWsImport( wsdlFile: String,generated:String,packageName:String,log:Logger): Seq[File] = {
+log.info(" source dir " +generated)
+    java.lang.System.setProperty("javax.xml.accessExternalSchema", "all")
+    val args = makeArgs(wsdlFile,generated,packageName)
+    val  sourceDirectory = new File(generated)
+
+
+    try {
+      IO.createDirectory(sourceDirectory)
+    }catch{
+      case ex =>
+        log.error("Error creating dir "+generated+ "  "+ex.getMessage)
     }
-    (outputDirectory ** "*.java").get
-  }
+
+    try {
+      log.debug("wsimport arguments " + args.mkString(" "))
+      val result = WsImport.doMain(args.toArray)
+      if (result == 0) {
+        log.info("Generated java from WSDL successfully")
+
+      }
+
+    }catch {
+      case t =>
+        log.error("Problem running wsimport " +t.getMessage)
+        log.error(t.getMessage)
+    }
+    sourceDirectory.listFiles()
+    }
+
 
 }
