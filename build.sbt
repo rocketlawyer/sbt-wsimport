@@ -8,8 +8,8 @@ libraryDependencies ++= Seq(
   "com.sun.xml.ws" % "jaxws-tools" % "2.2.10"
 )
 
-val internalReleases = "Internal Releases" at "http://f1tst-linbld100/nexus/content/repositories/releases"
-val internalSnapshots = "Internal Snapshots" at "http://f1tst-linbld100/nexus/content/repositories/snapshots"
+val internalReleases = "Internal Releases" at "https://nexus.build.rocketlawyer.net/nexus/content/repositories/releases"
+val internalSnapshots = "Internal Snapshots" at "https://nexus.build.rocketlawyer.net/nexus/content/repositories/snapshots"
 
 publishTo := {
   if (isSnapshot.value) Some(internalSnapshots)
