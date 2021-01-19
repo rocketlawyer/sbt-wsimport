@@ -2,7 +2,7 @@
 name := "sbt-wsimport"
 organization := "com.rocketlawyer"
 sbtPlugin := true
-scalaVersion := "2.10.5"
+scalaVersion := "2.12.13"
 
 libraryDependencies ++= Seq(
   "com.sun.xml.ws" % "jaxws-tools" % "2.2.10"
