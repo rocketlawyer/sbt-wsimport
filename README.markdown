@@ -1,3 +1,7 @@
+# NOTE
+
+This plugin has been moved to RL-Email in project folder to build as part of that project as it was the only place it was being used.
+
 # Usage
 Add the following to your `project/metabuild.sbt`:
 ```
